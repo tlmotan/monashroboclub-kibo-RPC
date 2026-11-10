@@ -36,8 +36,27 @@ DockingStation: position (0.200, 0, 0), attitude (0, 0, 0, 1). [Rulebook p.8]
 ## GoalPoint
 Given in `get_checkpoints` response as `goalpoint_id` (sample: 12 → Bay0 panel, next to the dock). **Confirm per run; it's a checkpoint ID.**
 
+## Observed in local runs
+**Run 2026-11-10, normal level, seed 1418795058** (8 checkpoints):
+| CP id | position (x, y, z) | marker_pose quaternion (from API) |
+|---|---|---|
+| 1 | 1.453, -0.526, 0.523 | -0.5, 0.5, 0.5, 0.5 |
+| 3 | 3.345, -0.510, 0.610 | -0.5, 0.5, 0.5, 0.5 |
+| 4 | 4.094, -0.512, 0.581 | -0.5, 0.5, 0.5, 0.5 |
+| 6 | 1.868, -0.245, 0.290 | 0, 0, 0.707, 0.707 |
+| 8 | 4.827, 0.161, 1.388 | 0, 1, 0, 0 |
+| 10 | 5.927, -0.031, 1.391 | 0, 1, 0, 0 |
+| 11 | 6.728, 0.194, 1.288 | -0.5, 0.5, 0.5, -0.5 |
+| 12 (goal) | 0.483, -0.092, 0.025 | -0.5, 0.5, -0.5, 0.5 |
+
+Findings:
+- **Checkpoint IDs = AR marker IDs**, a subset of 1–12 per run. The goal was also a checkpoint (id 12, next to the dock).
+- **Marker quaternions from the API differ from the Rulebook table** (e.g. marker 1: rulebook `[-0.707,0,0,0.707]`, API `[-0.5,0.5,0.5,0.5]`). Positions match. **Trust the API response**; the two likely use different marker-axis conventions.
+- Moving to the given `position` + `attitude.quaternion` with `MOVE_TO_ABSOLUTE_TARGET` alone scored **Lv3** on CP1, with no vision used.
+- **Speed (one data point):** dock → CP1, ~1.45 m, took ~30 s including accel/settle. That's ≈0.05 m/s effective. A naive route through all 8 CPs and back to the goal is ~14 m, so **time is tight**. Route order and the 5-min budget really matter.
+
 ## Things we still need to measure (fill in as found)
-- Flyable volume / keep-out zones of Kibo: _unknown — not in docs; find from sim/URDF_
+- Flyable volume / keep-out zones of Kibo: _unknown; `share/logs/latest/iss.urdf` may help_
 - IB2 body radius: _unknown_
-- Typical move speed / time for a 1 m `MOVE_TO_ABSOLUTE_TARGET`: _measure_
-- Settling time after a move before 1 s hold is stable: _measure_
+- Move time vs distance over several moves (is it ~linear? max speed?): _measure_
+- Settling time after a move before the 1 s hold is stable: _measure_

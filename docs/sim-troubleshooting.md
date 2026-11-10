@@ -15,4 +15,8 @@ Add an entry every time something breaks and you fix it: **Symptom → Cause →
 `Illegal` (violation?), `JudgeReport.mission` (start/finish/duration), `.checkpoint_detail[]` (id, success, level, reason), `.goal`, `.events`.
 
 ## Team-found issues
-_(none yet)_
+- **2026-11-10: Mac (Apple Silicon) works.** `bash ./build.sh --arm64` succeeded (images ~8.8 GB, build took a few minutes on Docker with 8 GB RAM / 10 CPUs), then `bash ./simulation.sh` ran a full mission and exited cleanly.
+- **macOS has no `timeout` command.** To cap a run in a script, use `perl -e 'alarm 900; exec @ARGV' bash ./simulation.sh`, then `docker compose down`.
+- **Each run writes ~300 MB** (`simulation.bag`) into `share/logs/<timestamp>/`. It's gitignored, but delete old runs to save disk.
+- **The local `result.json` has no numeric score**, only per-checkpoint pass/level, goal and timing. Final score / time bonus only show on the web sim.
+- Useful local-only files: `share/logs/latest/cheat_sheet.json` (the run's full checkpoint layout + seed + level), `judge_module_logs/judge.log`, `user_programs_logs/`.
