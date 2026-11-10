@@ -1,0 +1,24 @@
+# Official PDFs and archives are intentionally committed (team decision, 2026-11-10)
+# *.pdf
+# *.tar.gz
+
+# macOS
+.DS_Store
+
+# Simulator run outputs
+krpc7th-simulator/share/
+
+# catkin build artifacts
+**/catkin_ws/build/
+**/catkin_ws/devel/
+**/catkin_ws/install/
+**/catkin_ws/logs/
+**/catkin_ws/.catkin_tools/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors
+.vscode/
+.idea/
