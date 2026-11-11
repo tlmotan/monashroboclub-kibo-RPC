@@ -6,7 +6,7 @@ Status: `proposed` / `accepted` / `superseded by D-NNN`.
 ---
 
 ### D-001 (2026-11-10) — Which `users/` is the working copy
-**Status:** proposed — team to confirm
+**Status:** accepted (2026-11-11, Timothy). Root `users/` deleted; the original is still in `krpc7th-sample-source-beta.tar.gz`.
 **Context:** Two copies exist. Repo-root `users/` came from `krpc7th-sample-source-beta.tar.gz` (Sept 2026, Japanese comments, no OpenCV in CMake). `krpc7th-simulator/users/` is from the Oct 2026 simulator release, adds `find_package(OpenCV)`, and is what `docker-compose.yaml` mounts (`./users:/users`).
 **Decision:** Develop in `krpc7th-simulator/users/catkin_ws/src/krpc_user/`. Treat root `users/` as obsolete (delete once confirmed).
 **Why:** It's the one the local sim actually builds and runs, and it's newer.
@@ -18,8 +18,8 @@ Status: `proposed` / `accepted` / `superseded by D-NNN`.
 **Why:** Manual is the more recent technical doc and matches the shipped template.
 
 ### D-003 — Python or C++ for our node
-**Status:** proposed — undecided
-**Context:** Both templates provided. Python: faster iteration, easier OpenCV. C++14: faster on Jetson TX2, less likely to hit timing issues.
+**Status:** proposed: leaning Python, pending team discussion (Timothy, 2026-11-11)
+**Context:** Both templates provided. Python: faster iteration, easier OpenCV, and easier for a mostly-beginner team to read and change. C++14: faster on Jetson TX2, less likely to hit timing issues.
 **Decision:** _TBD_ — the baseline (D-004) is written in Python because it's quicker to iterate; that doesn't settle this.
 
 ### D-004 (2026-11-10) — Baseline visits checkpoints in API order, no optimisation yet

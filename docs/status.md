@@ -9,7 +9,9 @@ _Update at the end of every work session. Newest at top of the log._
 
 ## Next up
 0. Check MYSA portal / ask `krpc@mysa.gov.my` for any Malaysia-specific judging criteria or dates.
-1. Confirm D-001 (working `users/` copy) and remove the stale one.
+1. ~~Confirm D-001 and remove the stale `users/`~~ ✅ 2026-11-11.
+1b. Each teammate: follow [`setup.md`](setup.md), get one local run, log it in `sim-log.md`. Fill in GitHub usernames + workstreams in `team.md`.
+1c. Team discussion to settle D-003 (Python vs C++); currently leaning Python.
 2. ~~Build local sim and run the stock template once~~ ✅ 2026-11-10: works on Mac; CP1 passed at Lv3, goal not reached (see `sim-log.md`).
 3. Run the **baseline** on the web sim (Easy) to confirm the upload pipeline works and get a first real score; note ticket count before/after (checks `web-sim.md` assumption #2).
 4. Decide D-003 (Python vs C++).
@@ -25,6 +27,7 @@ _Update at the end of every work session. Newest at top of the log._
 Full run log lives in [`sim-log.md`](sim-log.md). Best so far: _none yet_.
 
 ## Session log
+- **2026-11-11** — Recorded team context in `team.md` (Timothy = lead, beginner team aiming for the ISS final, ways to help); accepted D-001 and deleted root `users/`; D-003 leaning Python pending team chat; added `setup.md` for Windows (WSL2) and Mac.
 - **2026-11-10** — Wrote the baseline in `user_template.py` (commit 25835fe) and ran it twice locally on Normal: 7/8 and 6/8 checkpoints, all Lv3, goal reached both times, finished at 230 s and 198 s. Measured 13 moves: ≈ 20 s fixed + 8 s per metre, landing within 1.4 cm. Next: route ordering, then first web-sim upload.
 - **2026-11-10** — Built local sim on Mac (arm64), ran stock template: 1/8 CPs (Lv3), 30 s, no goal. Key finding: just flying to the given pose earns Lv3; travel is slow (~0.05 m/s), so route/time budget is the main challenge. Details in `field.md`.
 - **2026-11-10** — Distilled rulebook/manual/guidebook into `docs/`, wrote `CLAUDE.md`, added `.gitignore`.
