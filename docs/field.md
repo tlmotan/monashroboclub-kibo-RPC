@@ -72,7 +72,8 @@ Each move is one `MOVE_TO_ABSOLUTE_TARGET` to a checkpoint's position + attitude
 - The scatter (e.g. 1.0 m taking 31 s but 1.9 m taking 32 s) is probably the turn: the time to rotate to the new attitude is not measured separately yet.
 - The code's estimate is deliberately a bit pessimistic: 18 s + 10 s per metre + 1.5 s hold.
 - **Accuracy:** every move ended 1.0–1.4 cm from the target, well inside the 10 cm Lv3 band. All 13 reported checkpoints scored Lv3 with no vision.
-- **Settling:** a 1.5 s wait after the move result was enough every time; the position did not drift during it. Hold + report costs about 2 s per checkpoint.
+- **Settling:** the position is always settled when the move reports success. **The attitude sometimes is not:** on short, quick moves the move can report success while IB2 is still turning (measured 14° off after a 0.33 m, 10 s move; it reached 2.4° about 3.6 s later). Reporting then costs levels (we got Lv1 and Lv2 that way). The program now waits until it is within 3° before reporting. Normal moves end 1–2.5° off.
+- Hold + report costs about 2 s per checkpoint.
 - **Goal:** calling `mission_finished` after the goal checkpoint was passed gives `goal: success` ("goal checkpoint previously passed").
 
 ## Things we still need to measure (fill in as found)
