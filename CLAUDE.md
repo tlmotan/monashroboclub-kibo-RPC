@@ -58,3 +58,8 @@ Web simulator: https://jaxa.krpc.jp/user-auth (SIMULATION tab → upload → STA
 - Log a one-paragraph entry in `docs/decisions.md` for any non-obvious choice.
 - If a doc fact turns out wrong, fix the doc in the same change.
 - Use `rospy.loginfo/logwarn/logerr` — it's the only log we get back from the web sim.
+
+## Project skills (`.claude/skills/`)
+`/preflight` (hard-rule checks), `/sim-run` (run + analyse + log a local sim), `/pack-web` (prepare an upload for Timothy), `/wrap-session` (status, decisions, commit, PR), `/meeting-update` (keep the kickoff agenda page current; `/wrap-session` runs it after every change). Use them instead of doing these by hand.
+- **Skills maintain themselves.** After using one, follow `.claude/skills/MAINTENANCE.md`: fix broken steps/scripts, then record what changed.
+- **Every correction from Timothy or a teammate gets logged**, whether in chat, a PR review, or passed on from WhatsApp. Put it in that skill's *Mistakes log*, or `.claude/skills/MISTAKES.md` if no skill fits, and change the step so it can't repeat. This applies even when no skill was being used.
