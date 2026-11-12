@@ -7,7 +7,7 @@ We program the **Int-Ball2** robot to fly around the ISS Kibo module, line up it
 
 ## New here? Read in this order (~20 min instead of ~150 pages of PDFs)
 1. [docs/rules.md](docs/rules.md) — the game, the scoring, the deadlines
-2. [docs/status.md](docs/status.md) — where we are and what's next
+2. [docs/status.md](docs/status.md) — where we are and what's next this week; [docs/roadmap.md](docs/roadmap.md) — the whole plan up to submission
 3. [docs/team.md](docs/team.md) — who owns what, and beginner-friendly ways to help
 4. [docs/architecture.md](docs/architecture.md) — how our program is structured
 5. When you start coding: [docs/api.md](docs/api.md) (ROS interfaces) and [docs/field.md](docs/field.md) (coordinates)
