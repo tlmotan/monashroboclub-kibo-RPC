@@ -9,6 +9,16 @@ measure IB2's real speed. See docs/architecture.md.
 """
 import json
 import math
+import os
+
+# Must run before rospy is imported. Inside the simulator's Docker network, the first hostname
+# lookups a new process makes can stall for exactly 5 seconds (the IPv4 and IPv6 queries are sent
+# together and one answer gets lost). The simulator sends the start signal only once and keeps it
+# available for about 3 seconds, so a stalled node misses it and the whole run does nothing.
+# 'single-request' makes the system resolver send the two queries one after the other, which
+# removes the stall. It changes nothing else. See docs/sim-troubleshooting.md and decision D-007.
+os.environ.setdefault('RES_OPTIONS', 'single-request')
+
 import rospy
 import actionlib
 from platform_msgs.msg import UserLogic
@@ -25,6 +35,9 @@ EST_SPEED_MPS = 0.10          # cruise speed; measured ~10 s per metre (docs/fie
 MOVE_OVERHEAD_SEC = 18.0      # fixed cost per move (accel, turn, settle); measured ~15 s
 SAFETY_MARGIN_SEC = 15.0      # time kept in hand when deciding whether a checkpoint fits
 FINISH_RESERVE_SEC = 5.0      # stop flying this long before the limit and report finish
+SETTLE_ANGLE_DEG = 3.0        # after a move, wait until attitude is within this of the target...
+SETTLE_POSITION_M = 0.03      # ...and position within this...
+SETTLE_TIMEOUT_SEC = 8.0      # ...but never wait longer than this
 HOLD_SEC = 1.5                # wait after a move before reporting (rules need a 1 s hold)
 MOVE_TIMEOUT_FACTOR = 2.0     # move timeout = estimated time x this
 MIN_MOVE_TIMEOUT_SEC = 20.0   # ...but never shorter than this
@@ -32,6 +45,9 @@ SERVICE_TIMEOUT_SEC = 10.0    # wait_for_service / wait_for_server
 ACTION_RESULT_TIMEOUT_SEC = 10.0  # checkpoint_passed result, and cancel confirmation
 GET_CHECKPOINTS_ATTEMPTS = 3
 CHECKPOINT_REPORT_ATTEMPTS = 2
+MOVE_ATTEMPTS = 3             # tries per checkpoint when the move is rejected (e.g. INVALID_NAV)
+MOVE_RETRY_PAUSE_SEC = 3.0    # pause before trying a rejected move again
+MAX_PLAN_CHECKPOINTS = 12     # route planner considers at most this many (rules: 6-12)
 DOCK_POSITION = (0.2, 0.0, 0.0)   # used only until the first navigation message arrives
 
 
@@ -39,8 +55,87 @@ def _distance(a, b):
     return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
 
 
+def _angle_between_deg(q1, q2):
+    """Smallest rotation angle between two quaternions [x, y, z, w], in degrees."""
+    norm = math.sqrt(sum(c * c for c in q1)) * math.sqrt(sum(c * c for c in q2))
+    if norm <= 0.0:
+        return 180.0
+    dot = abs(q1[0] * q2[0] + q1[1] * q2[1] + q1[2] * q2[2] + q1[3] * q2[3]) / norm
+    return math.degrees(2.0 * math.acos(min(1.0, dot)))
+
+
 def _estimate_move_sec(a, b):
     return MOVE_OVERHEAD_SEC + _distance(a, b) / EST_SPEED_MPS + HOLD_SEC
+
+
+def plan_route(start, targets, goal_position, budget_sec):
+    """Choose which checkpoints to visit, and in what order.
+
+    start          (x, y, z) where IB2 is now
+    targets        list of dicts with a 'position'; the goal checkpoint must NOT be in it
+    goal_position  [x, y, z] of the goal, flown to last (None = route may end anywhere)
+    budget_sec     time we may spend, including the final leg to the goal
+
+    Returns (route, estimated_sec). The route visits as many checkpoints as fit in the budget;
+    among routes with the same count it is the fastest one. estimated_sec includes the goal leg.
+
+    Method: exact search over every subset of checkpoints (Held-Karp dynamic programming).
+    best[mask][i] = least time to visit exactly the checkpoints in 'mask', ending at i.
+    With at most 11 checkpoints that is 2048 x 11 states, which is quick even on IB2.
+    """
+    n = min(len(targets), MAX_PLAN_CHECKPOINTS)
+    points = [targets[i]['position'] for i in range(n)]
+    infinity = float('inf')
+
+    from_start = [_estimate_move_sec(start, p) for p in points]
+    between = [[_estimate_move_sec(a, b) for b in points] for a in points]
+    if goal_position is None:
+        to_goal = [0.0] * n
+        direct_sec = 0.0
+    else:
+        to_goal = [_estimate_move_sec(p, goal_position) for p in points]
+        direct_sec = _estimate_move_sec(start, goal_position)
+
+    full = 1 << n
+    best = [[infinity] * n for _ in range(full)]
+    previous = [[-1] * n for _ in range(full)]
+    for i in range(n):
+        best[1 << i][i] = from_start[i]
+
+    best_count = 0
+    best_total = direct_sec
+    best_end = (0, -1)
+    for mask in range(1, full):
+        row = best[mask]
+        count = bin(mask).count('1')
+        for last in range(n):
+            time_here = row[last]
+            if time_here >= budget_sec:   # unreachable, or already over budget
+                continue
+            total = time_here + to_goal[last]
+            if total <= budget_sec and (count > best_count or (count == best_count and total < best_total)):
+                best_count = count
+                best_total = total
+                best_end = (mask, last)
+            leg = between[last]
+            for nxt in range(n):
+                bit = 1 << nxt
+                if mask & bit:
+                    continue
+                candidate = time_here + leg[nxt]
+                if candidate < best[mask | bit][nxt]:
+                    best[mask | bit][nxt] = candidate
+                    previous[mask | bit][nxt] = last
+
+    route = []
+    mask, last = best_end
+    while last >= 0:
+        route.append(targets[last])
+        before = previous[mask][last]
+        mask &= ~(1 << last)
+        last = before
+    route.reverse()
+    return route, best_total
 
 
 class UserTemplate:
@@ -63,6 +158,9 @@ class UserTemplate:
         self.__stop_requested = False
         self.__t0 = None
         self.__nav_position = None
+        self.__nav_status = None
+        self.__nav_quaternion = None
+        self.__last_move_timed_out = False
 
         # Subscriber
         self.__subscriber_start = rospy.Subscriber('/ib2_user/start', UserLogic, self.__callback_start)  # DO NOT REMOVE THIS LINE
@@ -97,8 +195,40 @@ class UserTemplate:
         try:
             p = data.pose.pose.position
             self.__nav_position = (p.x, p.y, p.z)
+            q = data.pose.pose.orientation
+            self.__nav_quaternion = (q.x, q.y, q.z, q.w)
+            self.__nav_status = (data.status.status, data.status.marker)
         except Exception as exc:
             rospy.logwarn_throttle(10.0, 'navigation message not usable: %s' % exc)
+
+    def __attitude_error_deg(self, quaternion):
+        current = self.__nav_quaternion
+        if current is None:
+            return 0.0   # no data: don't block on it
+        return _angle_between_deg(current, quaternion)
+
+    def __wait_until_on_target(self, checkpoint_target):
+        """After a move reports success, wait (bounded) until IB2 really is at the target pose.
+
+        The move can report success while IB2 is still finishing its turn. Reporting the
+        checkpoint then costs levels on centering/roll (seen locally: Lv1 and Lv2 with the
+        position only 1 cm off). Returns after SETTLE_TIMEOUT_SEC at the latest.
+        """
+        checkpoint_id = checkpoint_target['checkpoint_id']
+        start = rospy.get_time()
+        first_angle = self.__attitude_error_deg(checkpoint_target['quaternion'])
+        while not self.__should_abort():
+            angle = self.__attitude_error_deg(checkpoint_target['quaternion'])
+            offset = _distance(self.__current_position(), checkpoint_target['position'])
+            waited = rospy.get_time() - start
+            on_target = angle <= SETTLE_ANGLE_DEG and offset <= SETTLE_POSITION_M
+            if on_target or waited >= SETTLE_TIMEOUT_SEC:
+                log = rospy.loginfo if on_target else rospy.logwarn
+                log('SETTLE cp=%d on_target=%s waited=%.1fs angle_at_move_end=%.1fdeg angle_now=%.1fdeg pos_err=%.3fm',
+                    checkpoint_id, on_target, waited, first_angle, angle, offset)
+                return on_target
+            rospy.sleep(0.1)
+        return False
 
     def __wait_for_service(self, name):
         try:
@@ -277,6 +407,7 @@ class UserTemplate:
         deadline = move_start + timeout_sec
         result_text = 'NO_RESULT'
         success = False
+        self.__last_move_timed_out = False
         self.__action_active = True
         try:
             self.__command.send_goal(goal)
@@ -294,28 +425,51 @@ class UserTemplate:
                 self.__command.cancel_goal()
                 stopped = self.__command.wait_for_result(rospy.Duration(ACTION_RESULT_TIMEOUT_SEC))
                 result_text = 'CANCELLED_STOP' if self.__should_abort() else 'CANCELLED_TIMEOUT'
+                self.__last_move_timed_out = True
                 rospy.logwarn('move to checkpoint_id=%d cancelled (%s), stop confirmed=%s',
                               checkpoint_id, result_text, stopped)
         finally:
             self.__action_active = False
 
         # MOVE_LOG lines are our speed measurements: grep for them in the user log.
-        rospy.loginfo('MOVE_LOG cp=%d dist=%.3f dur=%.2f err=%.3f result=%s ok=%s clock=%.1f',
+        rospy.loginfo('MOVE_LOG cp=%d dist=%.3f dur=%.2f err=%.3f result=%s ok=%s nav=%s clock=%.1f',
                       checkpoint_id, distance, rospy.get_time() - move_start,
-                      _distance(self.__current_position(), position), result_text, success, self.__elapsed())
+                      _distance(self.__current_position(), position), result_text, success,
+                      self.__nav_status, self.__elapsed())
         return success
 
     def __visit(self, checkpoint_target, move_timeout_sec):
         """Move, hold, report. Returns True if the judge accepted the checkpoint."""
         checkpoint_id = checkpoint_target['checkpoint_id']
-        if not self.__move_to_checkpoint(checkpoint_target, move_timeout_sec):
+        deadline = rospy.get_time() + move_timeout_sec
+        moved = False
+        for attempt in range(1, MOVE_ATTEMPTS + 1):
+            time_for_move = deadline - rospy.get_time()
+            if self.__should_abort() or time_for_move <= 0.0:
+                break
+            if self.__move_to_checkpoint(checkpoint_target, time_for_move):
+                moved = True
+                break
+            # A move that ran out of time is not retried. A move the controller rejected
+            # (INVALID_NAV, ABORTED...) is worth another go after a short pause, because
+            # otherwise one bad moment makes us give up on every checkpoint in turn.
+            if self.__last_move_timed_out or attempt == MOVE_ATTEMPTS:
+                break
+            rospy.logwarn('checkpoint_id=%d: move rejected (attempt %d/%d), retrying in %.0fs',
+                          checkpoint_id, attempt, MOVE_ATTEMPTS, MOVE_RETRY_PAUSE_SEC)
+            rospy.sleep(MOVE_RETRY_PAUSE_SEC)
+        if not moved:
             rospy.logwarn('checkpoint_id=%d: move failed, not reporting it', checkpoint_id)
             return False
         if self.__should_abort():
             return False
+        self.__wait_until_on_target(checkpoint_target)
+        if self.__should_abort():
+            return False
         rospy.sleep(HOLD_SEC)
-        rospy.loginfo('checkpoint_id=%d: after hold err=%.3fm', checkpoint_id,
-                      _distance(self.__current_position(), checkpoint_target['position']))
+        rospy.loginfo('checkpoint_id=%d: after hold pos_err=%.3fm angle=%.1fdeg', checkpoint_id,
+                      _distance(self.__current_position(), checkpoint_target['position']),
+                      self.__attitude_error_deg(checkpoint_target['quaternion']))
         passed = self.__notify_checkpoint_passed(checkpoint_id)
         if not passed:
             rospy.logwarn('checkpoint_id=%d: not accepted by judge', checkpoint_id)
@@ -330,35 +484,47 @@ class UserTemplate:
             return
 
         goal_target = None
-        route = []
-        for target in targets:  # API order, goal moved to the end
+        remaining = []
+        for target in targets:
             if goal_id is not None and target['checkpoint_id'] == goal_id:
                 goal_target = target
             else:
-                route.append(target)
+                remaining.append(target)
         if goal_target is None:
             rospy.logwarn('goalpoint_id=%s is not in the checkpoint list; no goal leg planned', goal_id)
+        goal_position = goal_target['position'] if goal_target is not None else None
 
         passed = []
-        skipped = []
-        for target in route:
-            if self.__should_abort():
-                return
-            checkpoint_id = target['checkpoint_id']
+        failed = []
+        # Each pass: re-plan from where we are with the time we really have left, fly the first
+        # leg of that plan, drop that checkpoint from the list. The list shrinks every pass, so
+        # the loop is bounded. Re-planning means time saved (or lost) on earlier legs is used.
+        while remaining and not self.__should_abort():
             here = self.__current_position()
+            budget_sec = self.__time_left() - SAFETY_MARGIN_SEC
+            plan_start = rospy.get_time()
+            route, estimated_sec = plan_route(here, remaining, goal_position, budget_sec)
+            rospy.loginfo('PLAN route=%s est=%.0fs budget=%.0fs left_out=%d (planned in %.2fs)',
+                          [t['checkpoint_id'] for t in route], estimated_sec, budget_sec,
+                          len(remaining) - len(route), rospy.get_time() - plan_start)
+            if not route:
+                break
+            target = route[0]
+            remaining.remove(target)
+            checkpoint_id = target['checkpoint_id']
             leg_sec = _estimate_move_sec(here, target['position'])
             goal_leg_sec = 0.0
-            if goal_target is not None:
-                goal_leg_sec = _estimate_move_sec(target['position'], goal_target['position'])
-            budget_sec = self.__time_left() - SAFETY_MARGIN_SEC - goal_leg_sec
-            if leg_sec > budget_sec:
-                rospy.logwarn('checkpoint_id=%d skipped, not enough time (need %.0fs + %.0fs to goal, %.0fs left)',
-                              checkpoint_id, leg_sec, goal_leg_sec, self.__time_left())
-                skipped.append(checkpoint_id)
-                continue
-            move_timeout_sec = min(max(leg_sec * MOVE_TIMEOUT_FACTOR, MIN_MOVE_TIMEOUT_SEC), budget_sec)
+            if goal_position is not None:
+                goal_leg_sec = _estimate_move_sec(target['position'], goal_position)
+            move_timeout_sec = min(max(leg_sec * MOVE_TIMEOUT_FACTOR, MIN_MOVE_TIMEOUT_SEC),
+                                   budget_sec - goal_leg_sec)
             if self.__visit(target, move_timeout_sec):
                 passed.append(checkpoint_id)
+            else:
+                failed.append(checkpoint_id)
+        skipped = [t['checkpoint_id'] for t in remaining]
+        if skipped:
+            rospy.logwarn('checkpoints skipped, not enough time: %s (%.0fs left)', skipped, self.__time_left())
 
         if goal_target is not None and not self.__should_abort():
             move_timeout_sec = self.__time_left() - FINISH_RESERVE_SEC
@@ -368,8 +534,8 @@ class UserTemplate:
             else:
                 rospy.logwarn('no time left to fly to the goal')
 
-        rospy.loginfo('SUMMARY passed=%s skipped=%s of %d checkpoints, clock=%.1fs',
-                      passed, skipped, len(targets), self.__elapsed())
+        rospy.loginfo('SUMMARY passed=%s failed=%s skipped=%s of %d checkpoints, clock=%.1fs',
+                      passed, failed, skipped, len(targets), self.__elapsed())
 
     def __run_user_flow(self, msg):
         try:
