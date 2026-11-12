@@ -7,7 +7,7 @@ description: End-of-session routine for the Kibo-RPC repo — update docs/status
 
 ## Steps
 
-1. **See what changed:** `git status --short` and `git diff --stat`. Group the changes into what they are about.
+1. **See what changed:** `git status --short`, `git diff --stat`, and `git log origin/main..HEAD` (work may already be committed and pushed by an earlier session). Group the changes into what they are about.
    If changes from **different** pieces of work are mixed, ask which go together. One branch + PR per change.
 2. **If the node changed:** run `/preflight` (must be OK). Mention the most recent relevant `/sim-run` result. If the change was never run in the sim, say so plainly in the PR.
 3. **Update `docs/status.md`** (CLAUDE.md requires it every session):
@@ -19,7 +19,7 @@ description: End-of-session routine for the Kibo-RPC repo — update docs/status
 5. **Wrong facts:** if a doc turned out wrong this session, fix that doc in this same change (CLAUDE.md rule).
 6. **Branch:** never commit to `main`. If on `main`, `git fetch` then `git checkout -b <short-topic> origin/main`.
 7. **Commit and push:** a plain-English message that says why, not just what, ending with the attribution line from the system reminder. Then `git push -u origin <branch>`.
-8. **Open the PR** against `main`. Use the `tlmotan` account: `GH_TOKEN=$(gh auth token --user tlmotan) gh pr create ...` (the default `gh` account is not a collaborator). The body is for beginners:
+8. **Check for an existing PR first:** `GH_TOKEN=$(gh auth token --user tlmotan) gh pr list --head <branch> --state open`. If one exists, the push already updated it: read its body and edit it (`gh pr edit`) only if it's now wrong or missing something. Otherwise **open the PR** against `main`, or against the branch below it if it's stacked. Use the `tlmotan` account: `GH_TOKEN=$(gh auth token --user tlmotan) gh pr create ...` (the default `gh` account is not a collaborator). The body is for beginners:
    ```
    ## What this does        (2–4 sentences, no jargon, or explain the jargon)
    ## Why                   (the problem or score gain)
@@ -43,8 +43,10 @@ Corrections from Timothy or teammates. Format and rules: `.claude/skills/MAINTEN
 _No entries yet._
 
 ## Lessons learned
+- 2026-11-13: The route-planner work had already been committed, pushed and PR'd (#5) by an earlier session. I nearly opened a duplicate PR, so steps 1 and 8 now check for that.
 - Local `main` can lag `origin/main`; always branch from `origin/main` after `git fetch`.
 
 ## Changelog
+- 2026-11-13: Steps 1 and 8 check for already-committed work and an existing PR.
 - 2026-11-12: Created from the routine used in the 10–12 Nov sessions.
 - 2026-11-12: Added step 9 (update the kickoff agenda after every change), asked for by Timothy.

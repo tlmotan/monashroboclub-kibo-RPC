@@ -43,7 +43,9 @@ Corrections from Timothy or teammates. Format and rules: `.claude/skills/MAINTEN
 _No entries yet._
 
 ## Lessons learned
+- 2026-11-13: Until PR #4 merges, the source file only exists on the `claude-skills` branch. Edit and commit it there, not on the branch being wrapped up.
 - The page was first published from a scratchpad file; its source now lives in `docs/meetings/` so every update is versioned.
 
 ## Changelog
+- 2026-11-13: Second update: route planner in PR #5, 7–8 of 8, D-008, route-pair task = tighten the time estimate.
 - 2026-11-12: Created. First update: route planner, start-signal fix (D-007), `main` protection, roadmap PR #3, skills PR #4.

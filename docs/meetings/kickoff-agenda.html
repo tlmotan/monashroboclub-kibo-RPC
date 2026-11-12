@@ -96,15 +96,15 @@ footer{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padd
       <div><dt>Length</dt><dd>~55 min</dd></div>
       <div><dt>Host</dt><dd>Timothy</dd></div>
     </dl>
-    <p class="updated">Last updated 12 Nov 2026</p>
+    <p class="updated">Last updated 13 Nov 2026</p>
     <p class="goal">By the end of the call, everyone knows what the competition is, which workstream they're on, and what to do in the next two weeks.</p>
   </header>
 
   <section class="news" aria-labelledby="news-h">
-    <h2 id="news-h">New since the last version (12 Nov)</h2>
+    <h2 id="news-h">New since the last version (13 Nov)</h2>
     <ul>
-      <li><strong>Visit order solved.</strong> The program now works out the best route and re-plans after every stop. Local test: 7 of 8 at Lv3, goal reached with 54 s to spare. It's being finished on the <code>route-ordering</code> branch.</li>
-      <li><strong>Found and fixed a silent failure.</strong> 3 of 7 local runs scored zero because the robot missed the one-time start signal. A two-line fix (D-007) removed it in testing.</li>
+      <li><strong>Visit order solved, ready for review.</strong> The program now works out the best route and re-plans after every stop. Local tests pass <strong>7–8 of 8</strong> checkpoints with the goal reached, including our first 8 of 8 all at Lv3. Review it in <a href="https://github.com/tlmotan/monashroboclub-kibo-RPC/pull/5">PR #5</a>.</li>
+      <li><strong>Found and fixed two reliability problems.</strong> Some runs scored zero because the robot missed the one-time start signal (fixed by D-007). Others lost points because it reported a checkpoint before it had finished turning (fixed by D-008).</li>
       <li><strong>Reviews now matter.</strong> <code>main</code> is protected: every change needs one teammate's approval before it can be merged.</li>
       <li><strong>Whole-project roadmap</strong> written (<a href="https://github.com/tlmotan/monashroboclub-kibo-RPC/pull/3">PR #3</a>). <strong>Claude skills</strong> added (<a href="https://github.com/tlmotan/monashroboclub-kibo-RPC/pull/4">PR #4</a>): repeatable checks, sim runs and a log of every correction we give it.</li>
     </ul>
@@ -144,7 +144,7 @@ footer{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padd
           <ul>
             <li>Replay of our first program flying the mission in the local simulator</li>
             <li>Result so far: 7 of 8 checkpoints at Lv3, goal reached in time (JAXA's sample gets 1)</li>
-            <li>The robot is slow (about 20 s + 8 s per metre per move), so we added a <strong>route planner</strong> that picks the visit order fitting the most checkpoints</li>
+            <li>The robot is slow (about 20 s + 8 s per metre per move), so we added a <strong>route planner</strong> that picks the visit order fitting the most checkpoints: now 7–8 of 8, with a first 8/8 all-Lv3 run</li>
             <li>Key lesson: <strong>reliability</strong>. 3 of 7 runs once scored zero from a missed start signal. Our score is a 10-run average, so one silent run costs ~10%. Now fixed (D-007).</li>
           </ul>
         </div>
@@ -207,14 +207,14 @@ footer{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padd
         <ul>
           <li>Get the local simulator running with <code>docs/setup.md</code>, then log one run in <code>docs/sim-log.md</code></li>
           <li>Send Timothy your GitHub username</li>
-          <li>Review one open pull request (#2, #3 or #4) and ask at least one question in the comments. Your approval is what lets it merge.</li>
+          <li>Review one open pull request (#2–#5) and ask at least one question in the comments. Your approval is what lets it merge.</li>
         </ul>
       </div>
       <div class="hw-group">
         <h3>Movement + route pair</h3>
         <ul>
           <li>Read <code>docs/architecture.md</code>, especially the route planner section</li>
-          <li>First task: review the route-planner pull request when it opens, then measure how long turning takes and try a shorter hold at each checkpoint to cut the ~20 s spent per move</li>
+          <li>First task: review the route planner (<a href="https://github.com/tlmotan/monashroboclub-kibo-RPC/pull/5">PR #5</a>), then <strong>tighten its time estimate</strong>. Runs that left a checkpoint out still had 60–100 s spare, so the tuning numbers are too cautious. Compare runs before and after.</li>
         </ul>
       </div>
       <div class="hw-group">
