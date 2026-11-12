@@ -3,7 +3,7 @@
 _Update at the end of every work session. Newest at top of the log._
 
 ## Now
-- Phase: **baseline working locally** — visits checkpoints in API order, ends at the goal, finishes inside 5 min. Not yet run on the web sim.
+- Phase: **Phase 1 of the [roadmap](roadmap.md): prove it on the real simulator** (to 23 Nov). Baseline works locally — visits checkpoints in API order, ends at the goal, finishes inside 5 min. Not yet run on the web sim.
 - Submission deadline: **2027-01-20 23:59 JST** (~10 weeks from 2026-11-10).
 - Best web-sim score: _none yet_
 
@@ -27,6 +27,7 @@ _Update at the end of every work session. Newest at top of the log._
 Full run log lives in [`sim-log.md`](sim-log.md). Best so far: _none yet_.
 
 ## Session log
+- **2026-11-12** — Added [`roadmap.md`](roadmap.md): the end-to-end plan in six phases, replacing the week table in the timeline PDF (milestones and dates unchanged). No code changes.
 - **2026-11-11** — Recorded team context in `team.md` (Timothy = lead, beginner team aiming for the ISS final, ways to help); accepted D-001 and deleted root `users/`; D-003 leaning Python pending team chat; added `setup.md` for Windows (WSL2) and Mac.
 - **2026-11-10** — Wrote the baseline in `user_template.py` (commit 25835fe) and ran it twice locally on Normal: 7/8 and 6/8 checkpoints, all Lv3, goal reached both times, finished at 230 s and 198 s. Measured 13 moves: ≈ 20 s fixed + 8 s per metre, landing within 1.4 cm. Next: route ordering, then first web-sim upload.
 - **2026-11-10** — Built local sim on Mac (arm64), ran stock template: 1/8 CPs (Lv3), 30 s, no goal. Key finding: just flying to the given pose earns Lv3; travel is slow (~0.05 m/s), so route/time budget is the main challenge. Details in `field.md`.

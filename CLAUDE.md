@@ -13,6 +13,7 @@ level (POC: MYSA), Advanced Category, Regular Course**. We write a ROS 1 node th
 | Calling any ROS topic/service/action | `docs/api.md` |
 | Changing program structure | `docs/architecture.md` |
 | Starting a session / picking up work | `docs/status.md` |
+| Checking which phase we're in, milestones, what comes later | `docs/roadmap.md` |
 | About to make or revisit a design choice | `docs/decisions.md` |
 | Simulator/Docker misbehaving | `docs/sim-troubleshooting.md` |
 | Assigning work / who owns a module | `docs/team.md` |

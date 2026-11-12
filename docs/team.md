@@ -21,6 +21,8 @@ Team computers: a mix of Windows and Apple Silicon Macs. See [`setup.md`](setup.
 
 Who takes which workstream is still to be decided.
 
+The timeline PDF's week-by-week table is out of date (the baseline was finished early). The current plan is [`roadmap.md`](roadmap.md); the PDF's milestones and dates still stand.
+
 ## How we split the work
 Most of us are new to ROS and robotics, so Claude (the AI assistant Timothy runs) writes much of the code. Everyone else makes sure we **understand, test and improve** it.
 
