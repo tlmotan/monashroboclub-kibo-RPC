@@ -39,7 +39,9 @@ _No entries yet._
 ## Lessons learned
 - 2026-11-12: `share/logs/latest/` has no `result.json`. The real result is in the timestamped folder that `latest/link_origin` points to. The script handles this.
 - 2026-11-12: A run with no `result.json` and "Go" but no `start id` in our log = missed start signal (NO_START_SIGNAL). Seen in 3 of 7 local runs, caused by a 5 s DNS stall; fixed by D-007 (`RES_OPTIONS`). If it shows up again, the fix has stopped working, so investigate.
+- 2026-11-13: A Traceback printed *after* "finish processing" is rospy closing its connections during shutdown, not a crash. PYTHON_CRASH now only looks before that line.
 - Checkpoint counts include the goal point (e.g. "7 / 8"), matching the existing sim-log rows.
 
 ## Changelog
+- 2026-11-13: Fixed PYTHON_CRASH false positive on run 20261112093454 (shutdown-time rospy traceback).
 - 2026-11-12: Created. Signatures: NO_START_SIGNAL, PYTHON_CRASH, NEVER_REACHED_GO, NO_MISSION_FINISHED, ILLEGAL, GOAL_FAILED, OVER_TIME.

@@ -76,7 +76,10 @@ def collect(run_dir):
     r['plans'] = re.findall(r'PLAN [^\n]*', user)
     r['moves'] = re.findall(r'MOVE_LOG [^\n]*', user)
     r['problems'] = re.findall(r'\[rosout\]\[(?:WARN|ERROR|FATAL)\][^\n]*', user)
-    r['traceback'] = 'Traceback (most recent call last)' in user
+    # Only tracebacks before shutdown count: rospy's own threads often print one while the
+    # node is being stopped after 'finish processing', which is harmless (seen 2026-11-12).
+    before_stop = user.split('finish processing')[0]
+    r['traceback'] = 'Traceback (most recent call last)' in before_stop
     return r
 
 
@@ -93,7 +96,7 @@ SIGNATURES = [
      'docs/sim-troubleshooting.md (start signal), docs/decisions.md D-007; check RES_OPTIONS is still at the top of the node'),
     ('PYTHON_CRASH',
      lambda r: r['traceback'],
-     'Our Python node crashed (Traceback in user_program_output.log).',
+     'Our Python node crashed before the stop request (Traceback in user_program_output.log).',
      'read the traceback in user_programs_logs/user_program_output.log'),
     ('NEVER_REACHED_GO',
      lambda r: not r['go'],
