@@ -28,8 +28,9 @@ description: End-of-session routine for the Kibo-RPC repo — update docs/status
    ## Next                  (what's left)
    ```
    End with the attribution line from the system reminder. If this PR stacks on another, name it.
-9. **Tell Timothy** the PR link, what's not verified, and anything that needs his decision.
-10. **Self-improve:** follow `.claude/skills/MAINTENANCE.md`. Review comments asking for a change count as corrections: log them in the **Mistakes log** of the skill they belong to (or `.claude/skills/MISTAKES.md`).
+9. **Update the meeting agenda:** run `/meeting-update` (`.claude/skills/meeting-update/SKILL.md`) so the kickoff page matches this change. Commit its source edit in this same PR. This step happens until Timothy says the kickoff is done.
+10. **Tell Timothy** the PR link, what's not verified, what changed on the agenda, and anything that needs his decision.
+11. **Self-improve:** follow `.claude/skills/MAINTENANCE.md`. Review comments asking for a change count as corrections: log them in the **Mistakes log** of the skill they belong to (or `.claude/skills/MISTAKES.md`).
 
 ## Never
 - Never push to or merge `main`; Timothy or a teammate merges.
@@ -46,3 +47,4 @@ _No entries yet._
 
 ## Changelog
 - 2026-11-12: Created from the routine used in the 10–12 Nov sessions.
+- 2026-11-12: Added step 9 (update the kickoff agenda after every change), asked for by Timothy.
