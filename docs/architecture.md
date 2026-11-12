@@ -1,16 +1,26 @@
 # Architecture — what our program does
 
-> Status: **template only.** Nothing custom written yet. Update this file whenever structure changes.
+> Status: **baseline (2026-11-10).** One file, no vision, no route optimisation yet. Update this file whenever structure changes.
 
-## Current (stock JAXA template)
+## Current (baseline: visit every checkpoint, then goal)
 `krpc7th-simulator/users/catkin_ws/src/krpc_user/scripts/user_template.py`
 ```
-__init__            set up clients, mandatory /ib2_user/* plumbing, set ready=True
-__callback_start    (on /ib2_user/start) guard → __run_user_flow
-__run_user_flow     mission_start → [USER EDIT AREA] → mission_finished
-  └─ USER EDIT AREA currently: first checkpoint only → move → checkpoint_passed
-__stop_processing   cancel active move → respond
+__init__               set up clients, mandatory /ib2_user/* plumbing, nav subscriber, set ready=True
+__callback_start       (on /ib2_user/start) guard → __run_user_flow
+__run_user_flow        mission_start → start mission clock → __fly_mission → mission_finished
+__fly_mission          get checkpoints → for each (API order, goal last): time check → __visit
+  ├─ __fetch_checkpoints   get_checkpoints, up to 3 attempts, parse JSON; gives up cleanly if unusable
+  ├─ __visit               __move_to_checkpoint → hold 1.5 s → __notify_checkpoint_passed (max 2 tries)
+  └─ __move_to_checkpoint  absolute move with a hard timeout; cancels and confirms stop on timeout
+__stop_processing      set stop flag, cancel move + checkpoint actions → respond
 ```
+
+How it behaves:
+- **Order:** the order the API returns, with the GoalPoint checkpoint moved to the end.
+- **Time check:** before each checkpoint it estimates "time to get there + time from there to the goal" using `EST_SPEED_MPS`. If that doesn't fit in the time left (minus `SAFETY_MARGIN_SEC`), the checkpoint is skipped. The goal always gets flown last.
+- **Failures:** a failed or timed-out move is not retried and not reported; the program moves on. Nothing waits forever.
+- **Tunables** are constants at the top of the file (speed estimate, margins, hold time, timeouts).
+- **Logs to look for:** `MOVE_LOG` (one per move: distance, duration, final error, result) and `SUMMARY` (passed / skipped lists).
 
 ## Planned shape (draft — revise as we build)
 ```

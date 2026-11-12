@@ -16,10 +16,13 @@ level (POC: MYSA), Advanced Category, Regular Course**. We write a ROS 1 node th
 | About to make or revisit a design choice | `docs/decisions.md` |
 | Simulator/Docker misbehaving | `docs/sim-troubleshooting.md` |
 | Assigning work / who owns a module | `docs/team.md` |
+| Helping a teammate install the simulator | `docs/setup.md` |
 | Using the web simulator, tickets, submitting | `docs/web-sim.md` |
 | Recording or comparing run results | `docs/sim-log.md` |
 
-Team of 5; most don't use Claude Code, so `README.md` and `docs/` are written for humans. Keep them plain and readable.
+Team of 5, mostly ROS/robotics beginners, aiming to **win Malaysia and reach the ISS final**. Timothy (`tlmotan`) is lead; Claude writes much of the code, teammates review, run sims and own small pieces. Most don't use Claude Code, so `README.md`, `docs/` and every PR description are written for beginners: plain and readable.
+
+Workflow: one branch + PR per change (never commit to `main`). Claude never logs in to the web sim: prepare the `.tar.gz`, state level + memo, and Timothy uploads. Spend web-sim tickets sparingly.
 
 Source PDFs live in the repo root (committed; extract text with `pymupdf` if a doc fact needs re-checking). Extracted page numbers are cited in the docs as `[Rulebook p.N]`, `[Manual p.N]`.
 
@@ -29,7 +32,6 @@ Source PDFs live in the repo root (committed; extract text with `pymupdf` if a d
   - `users/catkin_ws/src/krpc_user/src/user_template_node.cpp` — C++14 alternative
   - `users/catkin_ws/src/krpc_user/launch/krpc_user.launch` — picks which one runs (`team_user_script`)
   - `share/logs/latest/` — results of last local run (`cheat_sheet.json`, judge logs, rosbag)
-- `users/` (repo root) — **older beta sample (Sept 2026)**. Not mounted by the simulator. See `docs/decisions.md` D-001.
 - `docs/` — distilled project knowledge (this file's index above).
 
 ## Commands (run from `krpc7th-simulator/`)

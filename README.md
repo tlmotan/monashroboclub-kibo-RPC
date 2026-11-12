@@ -8,7 +8,7 @@ We program the **Int-Ball2** robot to fly around the ISS Kibo module, line up it
 ## New here? Read in this order (~20 min instead of ~150 pages of PDFs)
 1. [docs/rules.md](docs/rules.md) — the game, the scoring, the deadlines
 2. [docs/status.md](docs/status.md) — where we are and what's next
-3. [docs/team.md](docs/team.md) — who owns what
+3. [docs/team.md](docs/team.md) — who owns what, and beginner-friendly ways to help
 4. [docs/architecture.md](docs/architecture.md) — how our program is structured
 5. When you start coding: [docs/api.md](docs/api.md) (ROS interfaces) and [docs/field.md](docs/field.md) (coordinates)
 
@@ -24,7 +24,7 @@ The official PDFs (Rulebook, Programming Manual, Guidebook) are in the repo root
 - `src/user_template_node.cpp` is the C++ alternative
 
 ## Quick start
-Needs Ubuntu (Windows: WSL2), plus Docker for the local simulator. See Programming Manual ch.2.
+Step-by-step for Windows and Mac: **[docs/setup.md](docs/setup.md)**. Short version:
 ```bash
 cd krpc7th-simulator
 bash ./build.sh            # add --arm64 on Apple Silicon Macs
