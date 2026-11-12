@@ -80,6 +80,10 @@ def collect(run_dir):
     # node is being stopped after 'finish processing', which is harmless (seen 2026-11-12).
     before_stop = user.split('finish processing')[0]
     r['traceback'] = 'Traceback (most recent call last)' in before_stop
+    # system.log can be ~500 MB, so let grep scan it instead of reading it into Python.
+    syslog = os.path.join(run_dir, 'judge_module_logs', 'system.log')
+    r['nav_timeout'] = os.path.exists(syslog) and subprocess.call(
+        ['grep', '-q', '-m1', '-F', 'Navigation message timed out', syslog]) == 0
     return r
 
 
@@ -103,6 +107,12 @@ SIGNATURES = [
      'The simulator never reached "Go": start-up broke before our code ran (Docker, '
      'Gazebo, or our node never set ready).',
      'docs/sim-troubleshooting.md; judge_module_logs/game.log'),
+    ('NAV_LOST',
+     lambda r: r['nav_timeout'] and not (r['result'] and r['result']['JudgeReport'].get('goal', {}).get('success')),
+     'The simulator\'s navigation data stopped ("Navigation message timed out" in system.log), so '
+     'moves were rejected and the run failed. Seen once with no known cause, and once when the '
+     'Mac went to sleep mid-run (check whether it slept). Not caused by our code so far.',
+     'docs/sim-troubleshooting.md (navigation timed out / keep the Mac awake)'),
     ('NO_MISSION_FINISHED',
      lambda r: r['start_received'] and not r['mission_finished'],
      'Mission started but we never called mission_finished, which means a FAILED run on the web sim.',
@@ -214,6 +224,9 @@ def report(r):
 
 def main():
     args = sys.argv[1:]
+    if not os.path.isdir(LOGS):
+        sys.exit('no simulator logs at %s (run a sim first, or run this from the main checkout, '
+                 'not a git worktree: share/ is git-ignored)' % LOGS)
     if args and args[0] == '--all':
         for d in sorted(os.listdir(LOGS)):
             if d[:1].isdigit():

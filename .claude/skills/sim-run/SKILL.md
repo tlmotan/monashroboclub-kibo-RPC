@@ -12,7 +12,7 @@ Argument (optional): how many runs (default 1), or `analyse <run-folder>` / `ana
 1. **Preflight first.** Run `/preflight` (or `python3 .claude/skills/preflight/scripts/preflight.py`). If it fails, stop and fix. Don't spend 10 minutes on a sim that is broken before it starts.
 2. **Run the sim in the background** (a run takes ~5–11 min; the watchdog ends it at 600 s after "Go"):
    ```bash
-   cd krpc7th-simulator && perl -e 'alarm 900; exec @ARGV' bash ./simulation.sh > /dev/null 2>&1; echo "EXIT=$?"
+   cd krpc7th-simulator && caffeinate -i perl -e 'alarm 900; exec @ARGV' bash ./simulation.sh > /dev/null 2>&1; echo "EXIT=$?"
    ```
    Use `run_in_background` and wait for the notification. Don't poll. Run sims one at a time: they share Docker and `share/logs/latest`.
    If Docker isn't running or the image is missing, see `docs/sim-troubleshooting.md`. If `build.sh` is needed, use `--arm64`.
@@ -39,9 +39,11 @@ _No entries yet._
 ## Lessons learned
 - 2026-11-12: `share/logs/latest/` has no `result.json`. The real result is in the timestamped folder that `latest/link_origin` points to. The script handles this.
 - 2026-11-12: A run with no `result.json` and "Go" but no `start id` in our log = missed start signal (NO_START_SIGNAL). Seen in 3 of 7 local runs, caused by a 5 s DNS stall; fixed by D-007 (`RES_OPTIONS`). If it shows up again, the fix has stopped working, so investigate.
+- 2026-11-12: A run where the Mac slept was invalid (NAV_LOST). Step 2 now wraps the sim in `caffeinate -i`.
 - 2026-11-13: A Traceback printed *after* "finish processing" is rospy closing its connections during shutdown, not a crash. PYTHON_CRASH now only looks before that line.
 - Checkpoint counts include the goal point (e.g. "7 / 8"), matching the existing sim-log rows.
 
 ## Changelog
+- 2026-11-13: Added NAV_LOST signature and `caffeinate -i` in step 2 (from the 12 Nov runs in sim-log); clear error when the logs folder is missing.
 - 2026-11-13: Fixed PYTHON_CRASH false positive on run 20261112093454 (shutdown-time rospy traceback).
 - 2026-11-12: Created. Signatures: NO_START_SIGNAL, PYTHON_CRASH, NEVER_REACHED_GO, NO_MISSION_FINISHED, ILLEGAL, GOAL_FAILED, OVER_TIME.
